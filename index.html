@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <!-- ضبط العرض ليتناسب مع الأجهزة المحمولة -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>موقع تسجيل الأسئلة</title>
+  <style>
+    /* ============================= */
+    /* Reset & Base Styles         */
+    /* ============================= */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+      direction: rtl;
+      line-height: 1.5;
+    }
+    h1 { font-size: 2rem; margin: 20px 0; text-align: center; }
+    h3 { font-size: 1.5rem; margin: 15px 0; text-align: center; }
+    p, label { font-size: 1rem; margin: 10px 0; text-align: center; }
+
+    /* ============================= */
+    /* Page Layout & Container       */
+    /* ============================= */
+    .page { 
+      width: 100%; 
+      min-height: 100vh; 
+      padding: 20px; 
+      display: none; 
+      align-items: center; 
+      justify-content: center; 
+    }
+    .active { display: flex; }
+    .container { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; }
+
+    /* ============================= */
+    /* Form Controls & Buttons       */
+    /* ============================= */
+    button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 1.2rem;
+      background-color: #1f1f1f;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background-color: #333333; }
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 1.1rem;
+      background-color: #1f1f1f;
+      color: #ffffff;
+      border: 1px solid #333333;
+      border-radius: 4px;
+    }
+
+    /* ============================= */
+    /* Flex Containers               */
+    /* ============================= */
+    .flex-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .half { width: 48%; }
+    @media (max-width:768px) { .half { width: 100%; } }
+
+    /* ============================= */
+    /* Difficulty Buttons            */
+    /* ============================= */
+    .difficulty-button {
+      display: inline-block;
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid #ffffff;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      text-align: center;
+      width: calc(50% - 20px);
+    }
+    .difficulty-button.selected { background-color: blue; }
+
+    /* ============================= */
+    /* Question Blocks               */
+    /* ============================= */
+    .question-block {
+      border: 1px solid #ffffff;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+      width: 100%;
+    }
+    .separator {
+      margin: 15px 0;
+      text-align: center;
+      font-size: 0.875rem;
+      color: #777777;
+    }
+
+    /* ============================= */
+    /* Manual File Name Display      */
+    /* ============================= */
+    #manualFileNameDisplay {
+      margin-top: 10px;
+      padding: 5px;
+      border: 1px solid #ffffff;
+      border-radius: 4px;
+      color: #ffffff;  /* نص أبيض */
+      text-align: center;
+      width: 100%;
+      max-width: 800px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- صفحة 1:0 - واجهة عرض الملفات والخيارات اليدوية -->
+  <div id="page-1-0" class="page active">
+    <div class="container">
+      <h1>واجهة ملفات النص من الخادم</h1>
+      
+      <!-- زر عرض الملفات المحفوظة -->
+      <button onclick="loadFilesList()">عرض الملفات المحفوظة</button>
+      
+      <!-- منطقة عرض قائمة الملفات -->
+      <div id="filesList" style="margin-top:10px;"></div>
+      
+      <!-- زر تنزيل الملف من الجهاز (نظام اليدوي) -->
+      <button onclick="manualLoadFile()">تنزيل الملف من الجهاز</button>
+      <input type="file" id="manualFileInput" accept=".txt" style="display:none" onchange="handleManualFile(event)">
+      
+      <!-- عرض اسم الملف الذي تم تحميله يدويًا -->
+      <div id="manualFileNameDisplay"></div>
+      
+      <!-- أزرار التنقل -->
+      <div style="margin-top:15px;">
+        <button onclick="goToWorkPage()">صفحة واجهة العمل</button>
+        <button onclick="goToPage('page-1-1')">إنشاء ملف جديد</button>
+      </div>
+      
+      <!-- زر تنزيل الملفات المختارة من الخادم -->
+      <div style="margin-top:15px;">
+        <button onclick="downloadSelectedFiles()">تحميل الملف النصي</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- صفحة 1:1 - إنشاء ملف نصي جديد -->
+  <div id="page-1-1" class="page">
+    <div class="container">
+      <h1>واجهة إنشاء ملف txt جديد</h1>
+      <label>اكتب اسمك:</label>
+      <input type="text" id="userNameInput" placeholder="اسم المستخدم">
+      <div>
+        <button onclick="handleNextFromCreateFile()">التالي</button>
+        <button onclick="goToPage('page-1-0')">رجوع</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- صفحة 1:11 - رفع الملف النصي الجديد إلى الخادم -->
+  <div id="page-1-11" class="page">
+    <div class="container">
+      <h1>رفع ملف txt الخاص بك إلى الخادم</h1>
+      <!-- زر رفع الملف المعاد تسميته -->
+      <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
+      <!-- زر تنزيل الملف الجديد -->
+      <button onclick="downloadNewFile()">تنزيل الملف الجديد</button>
+      <button onclick="goToPage('page-1-0')">رجوع</button>
+    </div>
+  </div>
+
+  <!-- صفحة 2:0 - واجهة العمل الرئيسية -->
+  <div id="page-2-0" class="page">
+    <div class="container">
+      <div class="flex-container">
+        <div id="displayUserName">اسم المستخدم</div>
+        <button onclick="goToPage('page-2-1')">الإعدادات</button>
+      </div>
+      <h1>واجهة العمل</h1>
+      <button onclick="goToPage('page-3-0')" style="font-size:1.4rem; padding:15px 30px;">دخول صفحة إعداد سؤال</button>
+    </div>
+  </div>
+
+  <!-- صفحة 3:0 - واجهة إعداد السؤال -->
+  <div id="page-3-0" class="page">
+    <div class="container">
+      <h1>واجهة إعداد السؤال</h1>
+      <div class="flex-container">
+        <div class="half">
+          <label>ضع رقم الصفحة</label>
+          <input type="number" id="pageNumberInput" placeholder="رقم الصفحة">
+        </div>
+        <div class="half">
+          <label>ضع رقم السؤال</label>
+          <input type="number" id="questionNumberInput" placeholder="رقم السؤال">
+        </div>
+      </div>
+      <div>
+        <p>حدد صعوبة السؤال:</p>
+        <div id="difficultyOptions">
+          <span class="difficulty-button" onclick="selectDifficulty(this, 'سهل جدًا')">سهل جدًا</span>
+          <span class="difficulty-button" onclick="selectDifficulty(this, 'سهل')">سهل</span>
+          <span class="difficulty-button" onclick="selectDifficulty(this, 'متوسط جدًا')">متوسط جدًا</span>
+          <span class="difficulty-button" onclick="selectDifficulty(this, 'متوسط')">متوسط</span>
+          <span class="difficulty-button" onclick="selectDifficulty(this, 'صعب')">صعب</span>
+          <span class="difficulty-button" onclick="selectDifficulty(this, 'صعب جدًا')">صعب جدًا</span>
+          <span class="difficulty-button" onclick="selectDifficulty(this, 'شديد الصعوبة')">شديد الصعوبة</span>
+          <span class="difficulty-button" onclick="selectDifficulty(this, 'مستحيل الحل فقط حفظ')">مستحيل الحل فقط حفظ</span>
+        </div>
+      </div>
+      <div>
+        <label>ضع ملاحظتك:</label>
+        <textarea id="noteInput" rows="4" placeholder="ملاحظتك هنا..."></textarea>
+      </div>
+      <div style="margin:10px 0;">
+        <button onclick="saveAndAddQuestion()">حفظ السؤال وإضافة سؤال آخر</button>
+      </div>
+      <div class="flex-container">
+        <button onclick="goToPage('page-1-0')">رجوع</button>
+        <button onclick="saveQuestionsAndGoToDownload()">زر حفظ معلومات السؤال / الأسئلة</button>
+      </div>
+      <div id="newQuestionsDisplay" style="margin-top:20px; border:1px dashed #ffffff; padding:10px;"></div>
+    </div>
+  </div>
+
+  <!-- صفحة 4:0 - رفع الملف النصي المعدل إلى الخادم -->
+  <div id="page-4-0" class="page">
+    <div class="container">
+      <h1>رفع الملف النصي المعدل إلى الخادم</h1>
+      <!-- زر رفع الملف يبقى نفس وظيفته الآن دون إعادة المستخدم -->
+      <button onclick="uploadFileAndGoBack()">رفع الى الخادم</button>
+      <!-- زر تنزيل الملف على الجهاز: يستخدم الاسم الحالي كما هو -->
+      <button onclick="manualDownloadFile()">تحميل على جهاز</button>
+    </div>
+  </div>
+
+  <!-- صفحة 2:1 - صفحة الإعدادات -->
+  <div id="page-2-1" class="page">
+    <div class="container">
+      <h1>صفحة الإعدادات</h1>
+      <div class="flex-container">
+        <button onclick="goToPage('page-2-0')">رجوع</button>
+        <div>
+          <button onclick="saveSettings()">حفظ التعديل</button>
+          <button onclick="saveSettingsAndReturn()">حفظ التعديل والانتقال</button>
+          <button onclick="undoChange()">تراجع</button>
+          <button onclick="redoChange()">تقدم</button>
+        </div>
+      </div>
+      <div id="questionsList" style="margin-top:20px;"></div>
+    </div>
+  </div>
+
+  <!-- صفحة 2:11 - حفظ التعديلات والانتقال -->
+  <div id="page-2:11" class="page">
+    <div class="container">
+      <h1>حفظ التعديلات</h1>
+      <button onclick="uploadFile()">رفع الملف النصي</button>
+    </div>
+  </div>
+
+  <script>
+    /*********************************************/
+    /* المتغيرات والتعليقات حول المتغيرات العامة */
+    /*********************************************/
+    let fileContent = "";
+    let currentFileName = "";
+    let oldQuestions = [];
+    let newQuestions = [];
+    let selectedDifficulty = "";
+    const SEPARATOR = "——————————————————————————————————————————————————————————————";
+    let undoStack = [];
+    let redoStack = [];
+    let selectedFiles = [];
+
+    /*********************************************/
+    /* دوال التنقل بين الصفحات                     */
+    /*********************************************/
+    function goToPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      if (pageId === 'page-2-0') {
+        let header = fileContent.split("\n")[0];
+        document.getElementById('displayUserName').innerText = header || "اسم المستخدم";
+      }
+      if (pageId === 'page-2-1') { renderSettings(); }
+      if (pageId === 'page-3-0') { updateNewQuestionsDisplay(); }
+    }
+    
+    /**************************************************/
+    /* نظام التعامل مع الملفات على الخادم (API)      */
+    /**************************************************/
+    function loadFilesList() {
+      fetch('/api/files')
+        .then(res => res.json())
+        .then(files => {
+          files.sort((a, b) => parseInt(b.match(/(\d+)/)?.[0] || 0) - parseInt(a.match(/(\d+)/)?.[0] || 0));
+          let list = document.getElementById('filesList');
+          list.innerHTML = '';
+          selectedFiles = [];
+          files.forEach(f => {
+            let btn = document.createElement('button');
+            btn.innerText = f;
+            btn.style.marginBottom = '5px';
+            btn.onclick = () => {
+              if (selectedFiles.includes(f)) {
+                selectedFiles = selectedFiles.filter(x => x !== f);
+                btn.style.backgroundColor = '#1f1f1f';
+              } else {
+                selectedFiles.push(f);
+                btn.style.backgroundColor = 'blue';
+              }
+            };
+            list.appendChild(btn);
+          });
+        })
+        .catch(err => console.error('Error loading files:', err));
+    }
+    
+    function downloadSelectedFiles() {
+      if (selectedFiles.length === 0) { alert('لم يتم اختيار أي ملفات.'); return; }
+      selectedFiles.forEach(f => {
+        fetch('/api/file?name=' + encodeURIComponent(f))
+          .then(r => r.text())
+          .then(txt => {
+            let blob = new Blob([txt], { type: 'text/plain' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = f;
+            link.click();
+          })
+          .catch(err => console.error('Error downloading file:', err));
+      });
+    }
+    
+    function selectFile(filename) {
+      fetch('/api/file?name=' + encodeURIComponent(filename))
+        .then(r => r.text())
+        .then(txt => {
+          fileContent = txt;
+          currentFileName = filename;
+          parseQuestionsFromFile();
+          alert('تم تحميل الملف: ' + filename);
+        })
+        .catch(err => console.error('Error loading file:', err));
+    }
+    
+    function goToWorkPage() {
+      let manual = document.getElementById('manualFileNameDisplay').innerText.trim();
+      if (manual !== '') { goToPage('page-2-0'); return; }
+      if (selectedFiles.length !== 1) { alert('يجب عليك اختيار ملف واحد فقط وليس عدة ملفات.'); return; }
+      if (currentFileName !== selectedFiles[0]) selectFile(selectedFiles[0]);
+      goToPage('page-2-0');
+    }
+    
+    // دالة رفع الملف التي لا تعيد المستخدم إلى صفحة (1:0)
+    function uploadFileAndGoBack() {
+      let regex = /معلوماتي تحديث رقم (\d+)/;
+      let match = currentFileName.match(regex);
+      let newFileName = match ? `معلوماتي تحديث رقم ${parseInt(match[1]) + 1}.txt` : 'معلوماتي تحديث رقم 1.txt';
+      currentFileName = newFileName;
+      fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: currentFileName, content: fileContent })
+      })
+      .then(r => r.json())
+      .then(_ => {
+        alert('تم رفع الملف إلى الخادم: ' + currentFileName);
+        loadFilesList();
+        // لا يتم إعادة التوجيه؛ يبقى المستخدم في نفس الصفحة (4:0)
+      })
+      .catch(err => console.error('Error uploading file:', err));
+    }
+    
+    /**********************************************************/
+    /* نظام رفع الملف اليدوي من جهاز المستخدم (Local)       */
+    /**********************************************************/
+    function manualLoadFile() { document.getElementById('manualFileInput').click(); }
+    function handleManualFile(e) {
+      let file = e.target.files[0];
+      if (file) {
+        let reader = new FileReader();
+        reader.onload = function(ev) {
+          fileContent = ev.target.result;
+          currentFileName = file.name;
+          parseQuestionsFromFile();
+          document.getElementById('manualFileNameDisplay').innerText = file.name;
+          alert('تم تحميل الملف من جهازك: ' + file.name);
+        };
+        reader.readAsText(file);
+      }
+    }
+    
+    function handleNextFromCreateFile() {
+      let name = document.getElementById('userNameInput').value.trim();
+      if (!name) { alert('من فضلك ادخل اسمك'); return; }
+      fileContent = name + "\n\n\n";
+      currentFileName = 'معلوماتي تحديث رقم 1.txt';
+      oldQuestions = [];
+      goToPage('page-1-11');
+    }
+    
+    function parseQuestionsFromFile() {
+      oldQuestions = [];
+      let lines = fileContent.split("\n");
+      let header = lines[0];
+      let questionsText = fileContent.substring(fileContent.indexOf(header) + header.length).trim();
+      if (!questionsText) return;
+      questionsText.split(SEPARATOR).forEach(part => {
+        let block = part.trim();
+        if (!block) return;
+        let ql = block.split("\n");
+        oldQuestions.push({
+          questionNumber: (ql[1]||'').split(':')[1]?.trim()||'',
+          pageNumber:     (ql[2]||'').split(':')[1]?.trim()||'',
+          difficulty:     (ql[3]||'').split(':')[1]?.trim()||'',
+          note:           (ql[5]||'').trim(),
+          fromFile: true
+        });
+      });
+    }
+    
+    function formatQuestion(q, i) {
+      return `سؤال رقم ${i}
+رقم السؤال : ${q.questionNumber}
+رقم الصفحة : ${q.pageNumber}
+صعوبه السؤال : ${q.difficulty}
+الملاحظة على السؤال هي :
+${q.note}
+${SEPARATOR}
+`;
+    }
+    
+    function rebuildFileContent() {
+      let header = fileContent.split("\n")[0];
+      let combined = oldQuestions.concat(newQuestions);
+      let newContent = header + "\n\n\n";
+      combined.forEach((q, i) => { newContent += formatQuestion(q, i+1); });
+      fileContent = newContent;
+    }
+    
+    function selectDifficulty(el, d) {
+      document.querySelectorAll('#difficultyOptions .difficulty-button').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedDifficulty = d;
+    }
+    
+    function saveAndAddQuestion() {
+      let p = document.getElementById('pageNumberInput').value.trim();
+      let qn = document.getElementById('questionNumberInput').value.trim();
+      let nt = document.getElementById('noteInput').value.trim();
+      if (!p || !qn || !selectedDifficulty) { alert('من فضلك اكمل البيانات المطلوبة بما في ذلك صعوبة السؤال'); return; }
+      newQuestions.push({ questionNumber: qn, pageNumber: p, difficulty: selectedDifficulty, note: nt, fromFile: false });
+      rebuildFileContent();
+      updateNewQuestionsDisplay();
+      document.getElementById('pageNumberInput').value = '';
+      document.getElementById('questionNumberInput').value = '';
+      document.getElementById('noteInput').value = '';
+      selectedDifficulty = '';
+      document.querySelectorAll('#difficultyOptions .difficulty-button').forEach(btn => btn.classList.remove('selected'));
+    }
+    
+    function updateNewQuestionsDisplay() {
+      let d = document.getElementById('newQuestionsDisplay');
+      d.innerHTML = '';
+      newQuestions.forEach((q, i) => {
+        let div = document.createElement('div');
+        div.style.marginBottom = '10px';
+        div.innerText = formatQuestion(q, oldQuestions.length + i + 1);
+        d.appendChild(div);
+      });
+    }
+    
+    function saveQuestionsAndGoToDownload() { rebuildFileContent(); goToPage('page-4-0'); }
+    
+    function renderSettings() {
+      let c = document.getElementById('questionsList');
+      c.innerHTML = '';
+      let combined = oldQuestions.concat(newQuestions);
+      combined.forEach((q, i) => {
+        let blk = document.createElement('div');
+        blk.className = 'question-block';
+        let h3 = document.createElement('h3');
+        h3.innerText = `رقم السؤال ${i+1}`;
+        blk.appendChild(h3);
+        let cd = document.createElement('div');
+        cd.id = `question-content-${i}`;
+        cd.innerHTML = `<p>
+رقم السؤال : ${q.questionNumber}<br>
+رقم الصفحة : ${q.pageNumber}<br>
+صعوبه السؤال : ${q.difficulty}<br>
+الملاحظة على السؤال هي :<br>${q.note}
+</p>`;
+        blk.appendChild(cd);
+        let sep = document.createElement('div');
+        sep.className = 'separator';
+        sep.innerText = SEPARATOR;
+        blk.appendChild(sep);
+        let eb = document.createElement('button');
+        eb.innerText = 'تعديل';
+        eb.onclick = () => enterEditMode(i);
+        blk.appendChild(eb);
+        let db = document.createElement('button');
+        db.innerText = 'حذف';
+        db.onclick = () => deleteQuestion(i);
+        blk.appendChild(db);
+        c.appendChild(blk);
+      });
+    }
+    
+    function enterEditMode(i) {
+      let combined = oldQuestions.concat(newQuestions);
+      let q = combined[i];
+      let cd = document.getElementById(`question-content-${i}`);
+      cd.innerHTML = '';
+      let form = document.createElement('div');
+      form.className = 'edit-form';
+      let labelQN = document.createElement('label');
+      labelQN.innerText = 'رقم السؤال:';
+      form.appendChild(labelQN);
+      let inputQN = document.createElement('input');
+      inputQN.type = 'text';
+      inputQN.value = q.questionNumber;
+      form.appendChild(inputQN);
+      let labelPN = document.createElement('label');
+      labelPN.innerText = 'رقم الصفحة:';
+      form.appendChild(labelPN);
+      let inputPN = document.createElement('input');
+      inputPN.type = 'text';
+      inputPN.value = q.pageNumber;
+      form.appendChild(inputPN);
+      let labelDiff = document.createElement('label');
+      labelDiff.innerText = 'صعوبه السؤال:';
+      form.appendChild(labelDiff);
+      let selectDiff = document.createElement('select');
+      let options = ["سهل جدًا", "سهل", "متوسط جدًا", "متوسط", "صعب", "صعب جدًا", "شديد الصعوبة", "مستحيل الحل فقط حفظ"];
+      options.forEach(opt => {
+        let o = document.createElement('option');
+        o.value = opt;
+        o.text = opt;
+        if (q.difficulty === opt) o.selected = true;
+        selectDiff.appendChild(o);
+      });
+      form.appendChild(selectDiff);
+      let labelNote = document.createElement('label');
+      labelNote.innerText = 'الملاحظة:';
+      form.appendChild(labelNote);
+      let textareaNote = document.createElement('textarea');
+      textareaNote.rows = 4;
+      textareaNote.value = q.note;
+      form.appendChild(textareaNote);
+      let saveBtn = document.createElement('button');
+      saveBtn.innerText = 'حفظ';
+      saveBtn.onclick = () => saveEdit(i, inputQN.value, inputPN.value, selectDiff.value, textareaNote.value);
+      form.appendChild(saveBtn);
+      let cancelBtn = document.createElement('button');
+      cancelBtn.innerText = 'إلغاء';
+      cancelBtn.onclick = renderSettings;
+      form.appendChild(cancelBtn);
+      cd.appendChild(form);
+    }
+    
+    function pushState() {
+      undoStack.push({ old: JSON.parse(JSON.stringify(oldQuestions)), new: JSON.parse(JSON.stringify(newQuestions)) });
+      redoStack = [];
+    }
+    
+    function saveEdit(i, newQN, newPN, newD, newN) {
+      pushState();
+      if (i < oldQuestions.length) {
+        Object.assign(oldQuestions[i], { questionNumber: newQN, pageNumber: newPN, difficulty: newD, note: newN });
+      } else {
+        Object.assign(newQuestions[i - oldQuestions.length], { questionNumber: newQN, pageNumber: newPN, difficulty: newD, note: newN });
+      }
+      rebuildFileContent();
+      renderSettings();
+    }
+    
+    function deleteQuestion(i) {
+      if (!confirm(`هل انت متأكد بحذف سؤال رقم ${i+1}؟`)) return;
+      pushState();
+      if (i < oldQuestions.length) oldQuestions.splice(i, 1);
+      else newQuestions.splice(i - oldQuestions.length, 1);
+      rebuildFileContent();
+      renderSettings();
+    }
+    
+    function undoChange() {
+      if (!undoStack.length) { alert('لا يوجد شيء للتراجع عنه.'); return; }
+      redoStack.push({ old: JSON.parse(JSON.stringify(oldQuestions)), new: JSON.parse(JSON.stringify(newQuestions)) });
+      let prev = undoStack.pop();
+      oldQuestions = prev.old; newQuestions = prev.new;
+      rebuildFileContent(); renderSettings();
+    }
+    
+    function redoChange() {
+      if (!redoStack.length) { alert('لا يوجد شيء للتقدم إليه.'); return; }
+      undoStack.push({ old: JSON.parse(JSON.stringify(oldQuestions)), new: JSON.parse(JSON.stringify(newQuestions)) });
+      let nxt = redoStack.pop();
+      oldQuestions = nxt.old; newQuestions = nxt.new;
+      rebuildFileContent(); renderSettings();
+    }
+    
+    function saveSettings() { rebuildFileContent(); goToPage('page-4-0'); }
+    function saveSettingsAndReturn() { rebuildFileContent(); goToPage('page-2-0'); }
+    
+    // دالة manualDownloadFile: الآن تستخدم currentFileName كما هو بدون زيادة، بحيث لا يتأثر بعملية الرفع
+    function manualDownloadFile() {
+      let blob = new Blob([fileContent], { type: "text/plain" });
+      let link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = currentFileName;
+      link.click();
+    }
+    
+    // دالة downloadNewFile: تنزيل الملف باسم ثابت "معلوماتي تحديث رقم 1.txt"
+    function downloadNewFile() {
+      let fixedName = "معلوماتي تحديث رقم 1.txt";
+      let blob = new Blob([fileContent], { type: "text/plain" });
+      let link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fixedName;
+      link.click();
+    }
+  </script>
+</body>
+</html>
