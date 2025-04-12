@@ -1,0 +1,12 @@
+{
+  "name": "ADD-Questions",
+  "version": "1.0.0",
+  "description": "مشروع لإدارة تسجيل الأسئلة",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
